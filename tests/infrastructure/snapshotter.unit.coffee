@@ -5,7 +5,7 @@ describe 'Space.eventSourcing.Snapshotter', ->
 
   class MySnapshotAggregate extends Space.eventSourcing.Aggregate
     @toString: -> 'MySnapshotAggregate'
-    fields: test: String
+    fields: -> test: String
     @registerSnapshotType 'MySnapshotAggregate'
 
   class MySnapshotApp extends Space.Application

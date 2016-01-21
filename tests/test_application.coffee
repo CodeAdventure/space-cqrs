@@ -87,7 +87,7 @@ Space.Error.extend CustomerApp, 'InvalidCustomerName', {
 
 class CustomerApp.Customer extends Space.eventSourcing.Aggregate
 
-  fields: {
+  fields: -> {
     name: String
   }
 
@@ -117,7 +117,7 @@ class CustomerApp.CustomerRegistration extends Space.eventSourcing.Process
     completed: 'completed'
   }
 
-  fields: {
+  fields: -> {
     customerId: String
     customerName: String
   }
