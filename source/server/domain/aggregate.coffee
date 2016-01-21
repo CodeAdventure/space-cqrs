@@ -28,7 +28,8 @@ class Space.eventSourcing.Aggregate extends Space.Object
 
   @registerSnapshotType: (id) ->
     fields = {}
-    fields[field] = type for field, type of this::fields
+    fields[field] = type for field, type of this::fields()
+    console.log(fields)
     @_snapshotType = Space.eventSourcing.Snapshot.extend {
       fields: ->
         superFields = Space.eventSourcing.Snapshot::fields.call(this)
@@ -63,7 +64,7 @@ class Space.eventSourcing.Aggregate extends Space.Object
     data.id = @_id
     data.state = @_state
     data.version = @_version
-    (data[field] = this[field]) for field of @fields when this[field] != undefined
+    (data[field] = this[field]) for field of @fields() when this[field] != undefined
     return new @constructor._snapshotType(data)
 
   applySnapshot: (snapshot) ->
@@ -71,7 +72,7 @@ class Space.eventSourcing.Aggregate extends Space.Object
     @_id = snapshot.id
     @_state = snapshot.state
     @_version = snapshot.version
-    (this[field] = snapshot[field]) for field of @fields when snapshot[field] != undefined
+    (this[field] = snapshot[field]) for field of @fields() when snapshot[field] != undefined
 
   record: (event) ->
     if this.meta? or @_metaData?
@@ -131,4 +132,4 @@ class Space.eventSourcing.Aggregate extends Space.Object
     props.version = @getVersion()
     return props
 
-  _assignFields: (event) -> _.extend this, _.pick(event, _.keys(this.fields))
+  _assignFields: (event) -> _.extend this, _.pick(event, _.keys(this.fields()))
