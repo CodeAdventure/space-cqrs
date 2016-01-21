@@ -29,7 +29,7 @@ class Space.eventSourcing.Aggregate extends Space.Object
   @registerSnapshotType: (id) ->
     fields = {}
     fields[field] = type for field, type of this::fields()
-    console.log(fields)
+
     @_snapshotType = Space.eventSourcing.Snapshot.extend {
       fields: ->
         superFields = Space.eventSourcing.Snapshot::fields.call(this)
