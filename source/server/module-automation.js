@@ -9,7 +9,7 @@ Space.Module.mixin({
   },
 
   _onInitializeEventSourcing: function(onInitialize) {
-    var module = this;
+    const module = this;
     onInitialize.call(module);
     _.each(_.union(module.routers, module.projections), function(singleton) {
       module.injector.map(singleton).asSingleton();
@@ -17,7 +17,7 @@ Space.Module.mixin({
   },
 
   _onStartEventSourcing: function(onStart) {
-    var module = this;
+    const module = this;
     onStart.call(module);
     _.each(_.union(module.routers, module.projections), function(singleton) {
       module.injector.create(singleton);

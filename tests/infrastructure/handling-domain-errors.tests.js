@@ -1,10 +1,10 @@
 describe("Space.eventSourcing - Handling domain errors", function() {
 
   it("publishes them as exception event", function() {
-    let registrationId = 'reg123';
-    CustomerApp.test(CustomerApp.Customer)
+    const registrationId = 'reg123';
+    Test.App.test(Test.Customer)
     .given(
-      new CustomerApp.RegisterCustomer({
+      new Test.RegisterCustomer({
         targetId: registrationId,
         customerId: 'cust123',
         customerName: 'MyStrangeCustomerName'
@@ -12,8 +12,8 @@ describe("Space.eventSourcing - Handling domain errors", function() {
     )
     .expect([
       new Space.domain.Exception({
-        thrower: 'CustomerApp.CustomerRegistration',
-        error: new CustomerApp.InvalidCustomerName('MyStrangeCustomerName')
+        thrower: 'Test.CustomerRegistration',
+        error: new Test.InvalidCustomerName('MyStrangeCustomerName')
       })
     ]);
   });

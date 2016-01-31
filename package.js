@@ -62,7 +62,7 @@ Package.onTest(function(api) {
 
   api.addFiles([
     // HELPERS
-    'tests/test_application.coffee',
+    'tests/test-application.js',
     // DOMAIN
     'tests/domain/aggregate.unit.coffee',
     'tests/domain/process.unit.coffee',

@@ -4,20 +4,20 @@ describe("Space.eventSourcing - snapshotting", function() {
     this.registrationId = 'registration123';
     this.customerId = 'customer543';
     this.customerName = 'TestName';
-    this.app = new CustomerApp();
+    this.app = new Test.App();
     this.app.reset();
   });
 
   it("generates correct snapshots", function() {
     this.app.start();
-    this.app.send(new CustomerApp.RegisterCustomer({
+    this.app.send(new Test.RegisterCustomer({
       targetId: this.registrationId,
       customerId: this.customerId,
       customerName: this.customerName
     }));
-    let snapshots = this.app.injector.get('Space.eventSourcing.Snapshots').find().fetch();
-    let customerRegSnapshot = EJSON.parse(snapshots[0].snapshot);
-    let customerSnapshot = EJSON.parse(snapshots[1].snapshot);
+    const snapshots = this.app.injector.get('Space.eventSourcing.Snapshots').find().fetch();
+    const customerRegSnapshot = EJSON.parse(snapshots[0].snapshot);
+    const customerSnapshot = EJSON.parse(snapshots[1].snapshot);
     expect(customerRegSnapshot).toMatch({ id: 'registration123',
       version: 3,
       state: 'completed',

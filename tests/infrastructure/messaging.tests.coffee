@@ -5,14 +5,14 @@ describe 'Space.eventSourcing - messaging', ->
 
   generatedEventsForCustomerRegistration = -> [
 
-    new CustomerApp.RegistrationInitiated({
+    new Test.RegistrationInitiated({
       sourceId: registration.id
       version: 1
       timestamp: new Date()
       customerId: customer.id
       customerName: customer.name
     })
-    new CustomerApp.CustomerCreated({
+    new Test.CustomerCreated({
       sourceId: customer.id
       version: 1
       timestamp: new Date()
@@ -21,7 +21,7 @@ describe 'Space.eventSourcing - messaging', ->
         customerRegistrationId: registration.id
       }
     })
-    new CustomerApp.WelcomeEmailTriggered({
+    new Test.WelcomeEmailTriggered({
       sourceId: registration.id
       version: 2
       timestamp: new Date()
@@ -33,7 +33,7 @@ describe 'Space.eventSourcing - messaging', ->
     # This is just visible in the app that runs the code
     # since it is directly published via the event store
     # instead of saved to the DB as part of a commit!
-    new CustomerApp.WelcomeEmailSent({
+    new Test.WelcomeEmailSent({
       sourceId: '999'
       version: 1
       timestamp: new Date()
@@ -43,7 +43,7 @@ describe 'Space.eventSourcing - messaging', ->
         customerRegistrationId: registration.id
       }
     })
-    new CustomerApp.RegistrationCompleted({
+    new Test.RegistrationCompleted({
       sourceId: registration.id
       version: 3
       timestamp: new Date()
@@ -55,9 +55,9 @@ describe 'Space.eventSourcing - messaging', ->
 
   it 'handles messages within one app correctly', ->
 
-    CustomerApp.test(CustomerApp.Customer)
+    Test.App.test(Test.Customer)
     .given(
-      new CustomerApp.RegisterCustomer {
+      new Test.RegisterCustomer {
         targetId: registration.id
         customerId: customer.id
         customerName: customer.name
@@ -83,9 +83,9 @@ describe 'Space.eventSourcing - messaging', ->
     try
       expectedEvents = null
 
-      CustomerApp.test(CustomerApp.Customer)
+      Test.test(Test.Customer)
       .given(
-        new CustomerApp.RegisterCustomer {
+        new Test.RegisterCustomer {
           targetId: registration.id
           customerId: customer.id
           customerName: customer.name
