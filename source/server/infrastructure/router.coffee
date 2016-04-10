@@ -6,6 +6,7 @@ class Space.eventSourcing.Router extends Space.messaging.Controller
     configuration: 'configuration'
     repository: 'Space.eventSourcing.Repository'
     commitStore: 'Space.eventSourcing.CommitStore'
+    injector: 'Injector'
     log: 'log'
   }
 
@@ -54,13 +55,23 @@ class Space.eventSourcing.Router extends Space.messaging.Controller
       @eventBus.subscribeTo @initializingMessage, (event) =>
         @log.info("#{this}: Creating new #{@eventSourceable} with event
                   #{event.typeName()}\n", event)
-        eventSourceable = @_handleDomainErrors(-> new @eventSourceable event)
+        eventSourceable = @_handleDomainErrors(->
+          instance = new @eventSourceable(event.sourceId)
+          @injector.injectInto(instance)
+          instance.handle(event)
+          return instance
+        )
         @repository.save(eventSourceable) if eventSourceable?
     else if @initializingMessage.isSubclassOf(Space.domain.Command)
       @commandBus.registerHandler @initializingMessage, (cmd) =>
         @log.info("#{this}: Creating new #{@eventSourceable} with command
                   #{cmd.typeName()}\n", cmd)
-        eventSourceable = @_handleDomainErrors(-> new @eventSourceable cmd)
+        eventSourceable = @_handleDomainErrors(->
+          instance = new @eventSourceable(cmd.targetId)
+          @injector.injectInto(instance)
+          instance.handle(cmd)
+          return instance
+        )
         @repository.save(eventSourceable) if eventSourceable?
 
   _routeEventToEventSourceable: (eventType) ->
@@ -76,6 +87,7 @@ class Space.eventSourcing.Router extends Space.messaging.Controller
     @log.info(@_logMsg("Handling event #{event.typeName()} for
                        #{@eventSourceable}<#{correlationId}>\n"), event)
     eventSourceable = @repository.find @eventSourceable, correlationId
+    @injector.injectInto(eventSourceable)
     throw Router.ERRORS.cannotHandleMessage(event) if !eventSourceable?
     eventSourceable = @_handleDomainErrors(-> eventSourceable.handle event)
     @repository.save(eventSourceable) if eventSourceable?
@@ -85,6 +97,7 @@ class Space.eventSourcing.Router extends Space.messaging.Controller
     @log.info(@_logMsg("Handling command #{command.typeName()} for
                        #{@eventSourceable}<#{command.targetId}>"), command)
     eventSourceable = @repository.find @eventSourceable, command.targetId
+    @injector.injectInto(eventSourceable)
     throw Router.ERRORS.cannotHandleMessage(command) if !eventSourceable?
     eventSourceable = @_handleDomainErrors(-> eventSourceable.handle command)
     @repository.save(eventSourceable) if eventSourceable?
@@ -95,6 +108,7 @@ class Space.eventSourcing.Router extends Space.messaging.Controller
     try
       return fn.call(this)
     catch error
+      @log.error(@_logMsg(error.message))
       if error instanceof Space.Error
         this.publish(new Space.domain.Exception({
           thrower: @eventSourceable.toString(),

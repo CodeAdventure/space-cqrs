@@ -75,7 +75,9 @@ Package.onTest(function(api) {
     'tests/infrastructure/projection.unit.coffee',
     'tests/infrastructure/projection-rebuilder.tests.coffee',
     'tests/infrastructure/messaging.tests.coffee',
-    'tests/infrastructure/handling-domain-errors.tests.js'
+    'tests/infrastructure/handling-domain-errors.tests.js',
+    // INTEGRATION
+    'tests/integration/event-sourceable-dependency-injection.js'
   ], 'server');
 
 });

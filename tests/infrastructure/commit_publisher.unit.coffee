@@ -109,19 +109,56 @@ describe "Space.eventSourcing.CommitPublisher", ->
     timeout = =>
       try
         commit = Commits.findOne(@commitId)
-        expect(fail).to.be.calledWith(commit)
+        expect(fail).to.be.calledWith(@commitId)
       catch err
         test.exception err
     Meteor.setTimeout(waitFor(timeout), 2);
 
-  it 'updates the commit record with the date the processing failed', (test, waitFor) ->
+  it 'updates the commit record with the date when the processing is failed', ->
+    lockedCommit = Commits.findAndModify({
+      query: $and: [_id: @commitId, { 'receivers.appId': { $nin: [@appId] }}]
+      update: $push: { receivers: { appId: @appId, receivedAt: new Date() } }
+    })
+    @commitPublisher._markAsProcessed = ->
+    @commitPublisher.publishCommit(@commitPublisher._parseCommit(lockedCommit))
+    @commitPublisher._failCommitProcessingAttempt(@commitId)
+
+    commit = Commits.findOne(@commitId)
+    failedAt = _.findWhere(commit.receivers, {appId: @appId}).failedAt
+    Meteor.clearTimeout(@commitPublisher._inProgress[commit._id])
+    expect(failedAt).to.be.instanceOf(Date)
+
+  it 'ignores calls to fail successful processing attempt to protects the commit record from race conditions with timeouts', ->
     @configuration.eventSourcing.commitProcessing.timeout = 1
+    Commits.findAndModify({
+      query: $and: [_id: @commitId, { 'receivers.appId': { $nin: [@appId] }}]
+      update: $push: { receivers: {
+        appId: @appId,
+        receivedAt: new Date(),
+        processedAt: new Date()
+      }}
+    })
+    @commitPublisher._failCommitProcessingAttempt(@commitId)
+    commit = Commits.findOne(@commitId)
+    failedAt = _.findWhere(commit.receivers, {appId: @appId}).failedAt
+    expect(failedAt).to.equal.undefined
+
+  it "stores each commit's publishing timeout using the id as a the key", ->
+    commit = Commits.findOne(@commitId)
+    @commitPublisher._setProcessingTimeout(commit)
+    expect(@commitPublisher._inProgress).to.have.property(@commitId);
+    expect(@commitPublisher._inProgress[@commitId]).to.respondTo('_onTimeout');
+
+  it "tracks each commit's publishing timeout when publishing", ->
+    mockPublisher = sinon.mock(@commitPublisher)
+    commit = Commits.findOne(@commitId)
+    mockPublisher.expects("_setProcessingTimeout").once().withExactArgs(commit)
+    @commitPublisher.publishCommit(@commitPublisher._parseCommit(commit))
+    mockPublisher.verify()
+
+  it "cleans up after the commit is processed, by deleting the object key", ->
+    mockPublisher = sinon.mock(@commitPublisher)
+    mockPublisher.expects("_cleanupTimeout").once().withExactArgs(@commitId)
     @commitPublisher.startPublishing()
-    timeout = =>
-      try
-        commit = Commits.findOne(@commitId)
-        processedAt = _.findWhere(commit.receivers, {appId: @appId}).processedAt
-        expect(processedAt).to.be.instanceOf(Date)
-      catch err
-        test.exception err
-    Meteor.setTimeout(waitFor(timeout), 1000);
+    expect(@commitPublisher._inProgress[@commitId]).to.equal.undefined
+    mockPublisher.verify()

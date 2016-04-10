@@ -33,6 +33,15 @@ Space.Application.extend('Test.App', {
     'Test.CustomerRegistrationProjection'
   ],
 
+  onInitialize() {
+    this.injector.map('myAggregateDependency').asStaticValue(
+      Test.myAggregateDependency
+    );
+    this.injector.map('myProcessDependency').asStaticValue(
+      Test.myProcessDependency
+    );
+  },
+
   afterInitialize() {
     this.injector.map('Test.CustomerRegistrations')
     .to(new this.mongo.Collection(null));
@@ -43,6 +52,11 @@ Space.Application.extend('Test.App', {
   }
 });
 
+// -------------- DEPENDENCIES ---------------
+
+Test.myAggregateDependency = sinon.spy();
+Test.myProcessDependency = sinon.spy();
+
 // -------------- COMMANDS ---------------
 
 Space.messaging.define(Space.domain.Command, 'Test', {
@@ -51,6 +65,9 @@ Space.messaging.define(Space.domain.Command, 'Test', {
     customerName: String
   },
   CreateCustomer: {
+    name: String
+  },
+  ChangeCustomerName: {
     name: String
   },
   SendWelcomeEmail: {
@@ -67,6 +84,9 @@ Space.messaging.define(Space.domain.Event, 'Test', {
     customerName: String
   },
   CustomerCreated: {
+    customerName: String
+  },
+  CustomerNameChanged: {
     customerName: String
   },
   WelcomeEmailTriggered: {
@@ -92,6 +112,10 @@ Space.Error.extend('Test.InvalidCustomerName', {
 
 Space.eventSourcing.Aggregate.extend('Test.Customer', {
 
+  dependencies: {
+    myAggregateDependency: 'myAggregateDependency'
+  },
+
   fields: {
     name: String
   },
@@ -99,7 +123,17 @@ Space.eventSourcing.Aggregate.extend('Test.Customer', {
   commandMap() {
     return {
       'Test.CreateCustomer'(command) {
+        this.myAggregateDependency();
+
         this.record(new Test.CustomerCreated({
+          sourceId: this.getId(),
+          customerName: command.name
+        }));
+      },
+      'Test.ChangeCustomerName'(command) {
+        this.myAggregateDependency();
+
+        this.record(new Test.CustomerNameChanged({
           sourceId: this.getId(),
           customerName: command.name
         }));
@@ -111,6 +145,9 @@ Space.eventSourcing.Aggregate.extend('Test.Customer', {
     return {
       'Test.CustomerCreated'(event) {
         this.name = event.customerName;
+      },
+      'Test.CustomerNameChanged'(event) {
+        this.name = event.customerName;
       }
     };
   }
@@ -121,6 +158,10 @@ Test.Customer.registerSnapshotType('Test.CustomerSnapshot');
 // -------------- PROCESSES ---------------
 
 Space.eventSourcing.Process.extend('Test.CustomerRegistration', {
+
+  dependencies: {
+    myProcessDependency: 'myProcessDependency'
+  },
 
   STATES: {
     creatingCustomer: 'creatingCustomer',
@@ -154,6 +195,8 @@ Space.eventSourcing.Process.extend('Test.CustomerRegistration', {
   // =========== COMMAND HANDLERS =============
 
   _registerCustomer(command) {
+    this.myProcessDependency();
+
     if (command.customerName === 'MyStrangeCustomerName') {
       throw new Test.InvalidCustomerName(command.customerName);
     }
@@ -173,6 +216,8 @@ Space.eventSourcing.Process.extend('Test.CustomerRegistration', {
   // =========== EXTERNAL EVENT HANDLERS =============
 
   _onCustomerCreated() {
+    this.myProcessDependency();
+
     this.trigger(new Test.SendWelcomeEmail({
       targetId: this.customerId,
       customerId: this.customerId,
@@ -186,6 +231,8 @@ Space.eventSourcing.Process.extend('Test.CustomerRegistration', {
   },
 
   _onWelcomeEmailSent() {
+    this.myProcessDependency();
+
     this.record(new Test.RegistrationCompleted({ sourceId: this.getId() }));
   },
 
@@ -222,7 +269,10 @@ Space.eventSourcing.Router.extend('Test.CustomerRegistrationRouter', {
 
 Space.eventSourcing.Router.extend('Test.CustomerRouter', {
   eventSourceable: Test.Customer,
-  initializingMessage: Test.CreateCustomer
+  initializingMessage: Test.CreateCustomer,
+  routeCommands: [
+    Test.ChangeCustomerName
+  ]
 });
 
 Space.Object.extend('Test.EmailRouter', {
