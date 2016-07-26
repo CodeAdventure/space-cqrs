@@ -20,6 +20,7 @@ class Space.eventSourcing.Aggregate extends Space.Object
     domainEventRequired: "#{Aggregate}: Event must inherit from Space.domain.Event"
     cannotHandleMessage: "#{Aggregate}: Cannot handle: "
     invalidEventSourceId: "#{Aggregate}: The given event has an invalid source id."
+    undefinedSnapshotTpe: "#{Aggregate}: Snapshot type is undefined. Did you forget to call: #{Aggregate}.registerSnapshotType()?"
   }
 
   @createFromHistory: (events) -> new this(events[0].sourceId, events)
@@ -58,6 +59,7 @@ class Space.eventSourcing.Aggregate extends Space.Object
   getEvents: -> @_events
 
   getSnapshot: ->
+    unless @constructor._snapshotType? then throw new Error Aggregate::ERRORS.undefinedSnapshotTpe
     data = {}
     data.id = @_id
     data.state = @_state
