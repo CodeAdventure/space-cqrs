@@ -144,7 +144,7 @@ To circumvent this, the concept of a commit is used, which bundles multiple even
 commands together into one "transaction" commit. [Here is a short blog article](http://blingcode.blogspot.co.at/2010/12/cqrs-building-transactional-event-store.html)
 talking about the basic concept.
 
-It heavily uses the `space-messaging` package for Metoer `EJSON` and
+It heavily uses the `space-messaging` package for Meteor `EJSON` and
 runtime-`check`ed domain events and commands that are automatically serialized
 into the MongoDB and restored for you. So you don't have to deal with
 serialization concerns anywhere but within your value objects.
